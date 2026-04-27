@@ -31,10 +31,10 @@ Six elevators are arranged in an L shape as below. Where is the best place to st
 
 void make_bmp();
 void make_gradients();
-static uint8_t pixels[800*3*800];
-static uint8_t red_gradient  [512];
-static uint8_t blue_gradient [512];
-static uint8_t green_gradient[512];
+static unsigned char pixels[800*3*800];
+static unsigned char red_gradient  [512];
+static unsigned char blue_gradient [512];
+static unsigned char green_gradient[512];
 
 /*
 
@@ -171,7 +171,7 @@ int main()
             if( idx < 0 )
                 idx = 0;
             int offset = i*800*3 + j*3;
-            uint8_t *p = &pixels[offset];
+            unsigned char *p = &pixels[offset];
             double delta = 0.01;
             double delta4 = 0.0015;
             bool isotherm =
@@ -248,7 +248,7 @@ int main()
 
 // From Wikipedia Following is an example of a 2×2 pixel, 24-bit bitmap (Windows DIB header BITMAPINFOHEADER) with pixel format RGB24.
 
-static uint8_t bmp_example[] = {
+static unsigned char bmp_example[] = {
 /* 00 2 */ 0x42, 0x4D,              // "BM" ID field (42 4D)
 /* 02 4 */ 0x46, 0x00, 0x00, 0x00,  // 70 bytes (54+16) Size of the BMP file (54 bytes header + 16 bytes data)
 /* 06 2 */ 0x00, 0x00,              // Unused   Application specific
@@ -277,7 +277,7 @@ static uint8_t bmp_example[] = {
 };
 
 // Modify to create an 800 x 800 header
-static uint8_t bmp_header[] = {
+static unsigned char bmp_header[] = {
 /* 00 2 */ 0x42, 0x4D,              // "BM" ID field (42 4D)
 /* 02 4 */ 0x36, 0x4c, 0x1d, 0x00,  // 1,920,054 bytes (54+1920000) Size of the BMP file (54 bytes header + 1,920,000 bytes data)
                                     // 1,920,054 = 0x1d4c36
@@ -309,7 +309,7 @@ void make_bmp()
 
     // Test - make nice stripes
     /*
-    uint8_t *p = pixels;
+    unsigned char *p = pixels;
     for( int i=0; i<800; i++ )
     {
         for( int j=0; j<100; j++ )
@@ -362,6 +362,7 @@ void make_bmp()
         }
     } */
     fwrite( pixels, 1, sizeof(pixels), f );
+    fclose(f);
 }
 
 // First half:  (Red to White) Blue and Green channels increase from 0 to 255, while Red stays at 255
@@ -373,15 +374,92 @@ void make_gradients()
     for( int i=0; i<256; i++ )
     {
         red_gradient  [i] = 255;
-        blue_gradient [i] = (uint8_t)i;
-        green_gradient[i] = (uint8_t)i;
+        blue_gradient [i] = (unsigned char)i;
+        green_gradient[i] = (unsigned char)i;
     }
 
     // Second half: (White to Blue)  Green and Red channels decrease from 255 to 0, while Blue stays at 255 
     for( int i=256; i<512; i++ )
     {
-        red_gradient  [i] = (uint8_t)(255 - (i-256));
+        red_gradient  [i] = (unsigned char)(255 - (i-256));
         blue_gradient [i] = 255;
-        green_gradient[i] = (uint8_t)(255 - (i-256));
+        green_gradient[i] = (unsigned char)(255 - (i-256));
     }
 }
+
+
+/*
+
+Some notes for Alexandre:
+
+It's easy to build this on Windows, Mac or Linux (especially the latter two, although I used Windows)
+
+For Unix operating systems use the command line like this;
+
+g++ sofitel.cpp
+chmod +x ./a.out
+./a.out
+
+The first line compiles sofitel.cpp as a C++ program
+The second gives the resulting executable file a.out executable privileges (weird I know) 
+The third line runs the program
+
+For Windows install Microsoft Visual C++ (community edition, free) and go from there. It's a monster
+but easy to use once you spend half an hour installing it!
+
+Here's an experiment to start with;
+
+Temporarily modify main() to just call this function;
+
+void make_blue_square()
+{
+    FILE *f = fopen("blue-800x800.bmp", "wb" );
+    if( !f )
+        return;
+    fwrite( bmp_header, 1, sizeof(bmp_header), f );
+    unsigned char *p = pixels;
+    for( int i=0; i<800*800; i++ )
+    {
+        *p++ = 255; // Blue
+        *p++ = 0;   // Green
+        *p++ = 0;   // Red
+    }
+    fwrite( pixels, 1, sizeof(pixels), f );
+    fclose(f);
+}
+
+It just makes a big 800x800 blue square.
+
+The bmp_header[] array is basically straight from the Examples section of the Wikipedia article
+on the .bmp format.
+
+The pixels array is declared as;
+
+static unsigned char pixels[800*3*800];
+
+(Don't worry about the 'static' keyword initially)
+
+It's basically just an array of 800*800*3 bytes (unsigned char is a byte, an integer in the range 0-255)
+This is because three bytes (red, green and blue) are needed for each pixel.
+
+This line;
+
+    unsigned char *p = pixels;
+
+Declares variable p, a pointer to a byte, and points it at the pixels array
+
+This line;
+
+        *p++ = 255; // Blue
+
+Sets the contents of the pointer to value 255 and bumps the pointer to the next address in memory.
+
+Understand (or just accept the meaning of) those two lines and you're well on the way to understanding
+function make_blue_square(). Understand that function and you're well on the way to understanding the
+actual program!
+
+*/
+
+
+
+
